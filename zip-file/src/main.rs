@@ -6,9 +6,17 @@ use futures_util::{AsyncWriteExt, StreamExt};
 use wasm_bindgen_futures::JsFuture;
 use wasm_streams::writable::WritableStream;
 use web_sys::wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::*;
 
 use async_zip::base::write::ZipFileWriter;
 use async_zip::{Compression, ZipEntryBuilder};
+
+#[wasm_bindgen]
+extern "C" {
+    // Dioxus.toml script: "https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"
+    #[wasm_bindgen(js_namespace = streamSaver, js_name = createWriteStream)]
+    fn create_write_stream(filename: &str) -> web_sys::WritableStream;
+}
 
 fn main() {
     dioxus::launch(App);
@@ -19,6 +27,8 @@ fn App() -> Element {
     let mut msg = use_signal(|| String::new());
 
     rsx! {
+        document::Script { src: "https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js" }
+
         button {
             onclick: move |_| {
                 let filename_urls = vec![
@@ -38,7 +48,7 @@ fn App() -> Element {
                                 msg.set(format!("Added {filename} to zip"));
                             };
 
-                            if let Err(e) = write_zip(stream.into(), filename_urls, report).await {
+                            if let Err(e) = write_zip(stream, filename_urls, report).await {
                                 msg.set(format!("{e}"));
                             } else {
                                 msg.set(format!("Written to {filename}!"));
@@ -60,7 +70,7 @@ fn App() -> Element {
 
 async fn save_file_stream(
     filename: String,
-) -> Result<Option<(String, web_sys::FileSystemWritableFileStream)>, String> {
+) -> Result<Option<(String, web_sys::WritableStream)>, String> {
     let opts = web_sys::SaveFilePickerOptions::new();
     opts.set_suggested_name(Some(&filename));
 
@@ -77,7 +87,7 @@ async fn save_file_stream(
                     match JsFuture::from(promise).await {
                         Ok(js_value) => {
                             match js_value.dyn_into::<web_sys::FileSystemWritableFileStream>() {
-                                Ok(stream) => Ok(Some((filename, stream))),
+                                Ok(stream) => Ok(Some((filename, stream.into()))),
                                 Err(e) => {
                                     Err(format!("Failed to receive file write stream: {e:?}"))
                                 }
@@ -112,7 +122,10 @@ async fn save_file_stream(
             }
         }
     } else {
-        Err("Save file unsupported".to_owned())
+        // fallback to streamsaver
+        // https://github.com/jimmywarting/StreamSaver.js
+        let stream = create_write_stream(&filename);
+        Ok(Some((filename, stream)))
     }
 }
 

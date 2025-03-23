@@ -1021,6 +1021,7 @@ dependencies = [
  "dioxus",
  "futures-util",
  "reqwest",
+ "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-streams",
  "web-sys",
