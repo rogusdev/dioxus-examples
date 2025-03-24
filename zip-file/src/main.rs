@@ -1,4 +1,3 @@
-use dioxus::logger::tracing::{debug, warn};
 use dioxus::prelude::*;
 
 use futures_util::{AsyncWriteExt, StreamExt};
@@ -147,24 +146,19 @@ where
     let mut zip_writer = ZipFileWriter::new(writable);
 
     for (filename, url) in filename_urls {
-        debug!("Getting url {url}");
         if let Ok(response) = client.get(&url).send().await {
-            debug!("Writing entry {filename}");
             let entry = ZipEntryBuilder::new(filename.clone().into(), Compression::Stored);
             let mut writer = match zip_writer.write_entry_stream(entry).await {
                 Ok(writer) => writer,
                 Err(e) => {
-                    warn!("Error creating entry for {filename}: {e:?}");
-                    continue;
+                    Err(format!("Error creating entry for {filename}: {e:?}"))?
                 }
             };
 
             let mut body = response.bytes_stream();
             // cargo add futures_util
             while let Some(chunk) = body.next().await {
-                debug!("Checking chunk");
                 if let Ok(bytes) = chunk {
-                    debug!("Writing chunk");
                     if let Err(e) = writer.write_all(&bytes).await {
                         Err(format!("Failed to write chunk for {filename}: {e:?}"))?
                     }
@@ -174,7 +168,6 @@ where
             if let Err(e) = writer.close().await {
                 Err(format!("Failed to close {filename} entry writer: {e:?}"))?
             } else {
-                debug!("Finished entry for {filename}");
                 report(filename);
             }
         } else {
