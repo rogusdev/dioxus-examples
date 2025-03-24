@@ -1,3 +1,3 @@
 #!/bin/bash
-# rm -rf target && RUSTFLAGS="--cfg web_sys_unstable_apis" dx serve --platform web --release
+# rm -rf target
 RUSTFLAGS="--cfg web_sys_unstable_apis" dx serve --platform web --release
