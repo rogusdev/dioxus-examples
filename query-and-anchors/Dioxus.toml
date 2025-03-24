@@ -1,0 +1,6 @@
+[application]
+
+[web.app]
+
+# HTML title tag content
+title = "query-and-anchors"
