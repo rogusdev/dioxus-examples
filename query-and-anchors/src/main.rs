@@ -4,14 +4,22 @@ use dioxus::prelude::*;
 #[rustfmt::skip]
 enum Route {
     #[layout(Nav)]
+
     #[route("/")]
     Home {},
+
     #[route("/search?:q")]
     SearchQuery { q: String },
     #[route("/search")]
     SearchBlank {},
+
     #[route("/anchors")]
     Anchors {},
+
+    #[route("/tabs#:tab")]
+    Tabs { tab: String },
+    #[route("/tabs", Tabs)]
+    TabsEmpty {},
 }
 
 fn main() {
@@ -65,6 +73,20 @@ fn Home() -> Element {
                 to: "/anchors#h6".to_owned(),
                 // to: Route::Anchors {}, // how to add a hash string to the link??
                 "Anchors H6"
+            }
+        }
+
+        div {
+            Link {
+                to: Route::TabsEmpty {},
+                "Tabs Empty"
+            }
+        }
+
+        div {
+            Link {
+                to: Route::Tabs { tab: "t2".to_owned() },
+                "Tabs T2"
             }
         }
     }
@@ -202,6 +224,66 @@ fn Anchors() -> Element {
             p {
                 "6 Lorem ipsum"
             }
+        }
+    }
+}
+
+#[component]
+fn Tabs(tab: Option<String>) -> Element {
+    let tab = tab.as_deref().unwrap_or_default();
+
+    rsx! {
+        div {
+            Link {
+                to: Route::Home {},
+                "Home"
+            }
+        }
+
+        div {
+            p {
+                "Tab:"
+            }
+        }
+
+        match tab {
+            // t1 is default so goes at bottom
+            "t2" => rsx! {
+                div {
+                    Link {
+                        to: Route::Tabs { tab: "t1".to_owned() },
+                        "T1"
+                    }
+                }
+
+                div {
+                    h1 {
+                        "Tab 2"
+                    }
+
+                    p {
+                        "2 Lorem ipsum"
+                    }
+                }
+            },
+            _ => rsx! {
+                div {
+                    Link {
+                        to: Route::Tabs { tab: "t2".to_owned() },
+                        "T2"
+                    }
+                }
+
+                div {
+                    h1 {
+                        "Tab 1"
+                    }
+
+                    p {
+                        "1 Lorem ipsum"
+                    }
+                }
+            },
         }
     }
 }
